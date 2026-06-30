@@ -1,9 +1,487 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Operations OS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operations OS</title>
+<style>
+  @import url('https://cdnjs.cloudflare.com/ajax/libs/inter-ui/3.19.3/inter.css');
+
+  :root{
+    --primary:#1B4F8C; --primary-tint:#EAF2FF;
+    --secondary:#2F8F5B; --secondary-tint:#E7F6EC;
+    --bg:#F7F9FC; --surface:#FFFFFF; --border:#E5E9EF;
+    --text:#10151D; --text-muted:#6B7686;
+    --amber:#A6660B; --amber-tint:#FBF1E0;
+    --gray:#5B6472; --gray-tint:#EEF1F5;
+    --radius-card:10px; --radius-btn:6px; --radius-badge:8px;
+  }
+  html.dark{
+    --primary:#4A90D9; --primary-tint:#1A2533;
+    --secondary:#52C57F; --secondary-tint:#16271E;
+    --bg:#0E141C; --surface:#141C27; --border:#243042;
+    --text:#F2F5F9; --text-muted:#8B97A8;
+    --amber:#E0A84D; --amber-tint:#2A2113;
+    --gray:#9AA5B4; --gray-tint:#1B222C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg); color:var(--text);
+    transition:background .2s ease,color .2s ease;
+    min-height:100vh;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit; text-decoration:none;}
+
+  /* ===== Top bar ===== */
+  .topbar{
+    display:flex; align-items:center; gap:16px;
+    padding:12px 24px; background:var(--surface);
+    border-bottom:1px solid var(--border);
+    position:sticky; top:0; z-index:50;
+  }
+  .brand{display:flex; align-items:center; gap:8px; font-weight:600; font-size:15px;}
+  .live-dot{width:7px; height:7px; border-radius:50%; background:var(--secondary); box-shadow:0 0 0 3px var(--secondary-tint);}
+  .workspace-label{
+    font-size:12px; color:var(--text-muted); padding:3px 9px;
+    background:var(--gray-tint); border-radius:var(--radius-badge);
+  }
+  .topbar-spacer{flex:1;}
+  .date-pill, .sync-pill, .search-pill{
+    font-size:12px; padding:6px 10px; border-radius:var(--radius-btn);
+    border:1px solid var(--border); color:var(--text-muted);
+    display:flex; align-items:center; gap:6px; background:var(--bg);
+  }
+  .sync-pill .dot{width:6px; height:6px; border-radius:50%; background:var(--secondary);}
+  .icon-btn{
+    width:30px; height:30px; border-radius:var(--radius-btn);
+    border:1px solid var(--border); background:var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text);
+  }
+  .icon-btn:hover{background:var(--gray-tint);}
+
+  /* ===== Layout ===== */
+  .shell{display:flex; min-height:calc(100vh - 53px);}
+
+  /* ===== Dock ===== */
+  .dock{
+    width:240px; flex-shrink:0; background:var(--surface);
+    border-right:1px solid var(--border); padding:20px 12px;
+  }
+  .dock-group{margin-bottom:22px;}
+  .dock-group-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--text-muted); padding:0 10px 8px; font-weight:600;
+  }
+  .dock-item{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 10px; border-radius:var(--radius-btn);
+    font-size:13.5px; cursor:pointer; color:var(--text);
+  }
+  .dock-item:hover{background:var(--gray-tint);}
+  .dock-icon{
+    width:22px; height:22px; border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--primary-tint); color:var(--primary);
+    flex-shrink:0; font-size:12px;
+  }
+  .dock-item span.name{flex:1;}
+  .status-dot{width:6px; height:6px; border-radius:50%; flex-shrink:0;}
+  .status-dot.live{background:var(--secondary);}
+  .status-dot.soon{background:var(--amber);}
+
+  /* ===== Main ===== */
+  .main{flex:1; padding:32px 36px 60px; max-width:1180px;}
+  .page-header{margin-bottom:32px;}
+  .eyebrow{
+    font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--secondary); font-weight:600; margin-bottom:8px;
+  }
+  h1{font-size:28px; font-weight:600; letter-spacing:-.01em; margin-bottom:8px;}
+  .subtitle{color:var(--text-muted); font-size:14.5px; max-width:640px; line-height:1.5;}
+
+  .section{margin-bottom:36px;}
+  .section-title{
+    display:flex; align-items:center; gap:10px;
+    font-size:14px; font-weight:600; margin-bottom:14px;
+  }
+  .section-count{
+    font-size:11px; color:var(--text-muted); font-weight:400;
+    background:var(--gray-tint); padding:2px 7px; border-radius:var(--radius-badge);
+  }
+  .card-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:14px;
+  }
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-card); padding:16px; cursor:pointer;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .card:hover{border-color:var(--primary);}
+  .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .card-icon{
+    width:32px; height:32px; border-radius:var(--radius-badge);
+    background:var(--primary-tint); color:var(--primary);
+    display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;
+  }
+  .badge{
+    font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:var(--radius-badge);
+    white-space:nowrap; text-transform:none;
+  }
+  .badge.live{background:var(--secondary-tint); color:var(--secondary);}
+  .badge.soon{background:var(--amber-tint); color:var(--amber);}
+  .badge.idea{background:var(--gray-tint); color:var(--gray);}
+  .card-name{font-size:14.5px; font-weight:600;}
+  .card-desc{font-size:12.5px; color:var(--text-muted); line-height:1.5;}
+  .card-meta{
+    font-size:11px; color:var(--text-muted); padding-top:8px;
+    border-top:1px solid var(--border); display:flex; justify-content:space-between;
+  }
+
+  /* ===== Architecture strip ===== */
+  .arch-strip{
+    margin-top:8px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-card); padding:22px;
+  }
+  .arch-title{font-size:14px; font-weight:600; margin-bottom:4px;}
+  .arch-sub{font-size:12.5px; color:var(--text-muted); margin-bottom:18px; line-height:1.5;}
+  .arch-row{
+    display:flex; align-items:center; gap:12px; font-size:12.5px;
+    padding:9px 0; border-top:1px solid var(--border);
+  }
+  .arch-row:first-of-type{border-top:none;}
+  .arch-mod{font-weight:600; width:230px; flex-shrink:0;}
+  .arch-arrow{color:var(--text-muted);}
+  .arch-source{color:var(--text-muted); flex:1;}
+  .arch-status{font-size:10.5px; padding:2px 7px; border-radius:var(--radius-badge); flex-shrink:0;}
+  .note-block{
+    margin-top:18px; padding:14px 16px; background:var(--primary-tint);
+    border-radius:var(--radius-btn); font-size:12.5px; color:var(--text); line-height:1.6;
+  }
+  .note-block strong{color:var(--primary);}
+
+  /* ===== Modal ===== */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(10,14,20,.5);
+    align-items:center; justify-content:center; z-index:100;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-card); padding:24px; width:340px;
+  }
+  .modal-icon{
+    width:36px; height:36px; border-radius:var(--radius-badge);
+    background:var(--amber-tint); color:var(--amber);
+    display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:14px;
+  }
+  .modal h3{font-size:16px; margin-bottom:6px;}
+  .modal p{font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:18px;}
+  .modal-close{
+    width:100%; padding:9px; border-radius:var(--radius-btn); border:none;
+    background:var(--primary); color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+  }
+
+  @media (max-width:760px){
+    .dock{display:none;}
+    .main{padding:24px 18px 50px;}
+    .arch-mod{width:160px;}
+  }
+</style>
 </head>
 <body>
-<h1>Operations OS</h1>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="live-dot"></span>
+    Operations OS
+  </div>
+  <span class="workspace-label">Uniform manufacturing</span>
+  <div class="topbar-spacer"></div>
+  <div class="date-pill mono" id="dateNow"></div>
+  <div class="sync-pill"><span class="dot"></span>1 source syncing</div>
+  <div class="search-pill mono">⌘K search</div>
+  <button class="icon-btn" id="themeToggle" title="Toggle theme">☀</button>
+</div>
+
+<div class="shell">
+  <div class="dock">
+    <div class="dock-group">
+      <div class="dock-group-label">Costing &amp; pricing</div>
+      <div class="dock-item" data-soon="Garment cost calculator">
+        <div class="dock-icon">₹</div><span class="name">Garment cost calculator</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Fabric average calculator">
+        <div class="dock-icon">⊞</div><span class="name">Fabric average calculator</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Fabric kilo-to-width calculator">
+        <div class="dock-icon">↔</div><span class="name">Kilo-to-width calculator</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Wastage and rejection log">
+        <div class="dock-icon">✂</div><span class="name">Wastage &amp; rejection log</span><span class="status-dot soon"></span>
+      </div>
+    </div>
+    <div class="dock-group">
+      <div class="dock-group-label">Production &amp; labor</div>
+      <div class="dock-item" data-soon="Tailor piece rate tracker">
+        <div class="dock-icon">🧵</div><span class="name">Tailor piece rate tracker</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Daily task monitor">
+        <div class="dock-icon">☑</div><span class="name">Daily task monitor</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Order and production status board">
+        <div class="dock-icon">▤</div><span class="name">Order status board</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Delivery and dispatch tracker">
+        <div class="dock-icon">→</div><span class="name">Delivery &amp; dispatch tracker</span><span class="status-dot soon"></span>
+      </div>
+    </div>
+    <div class="dock-group">
+      <div class="dock-group-label">Finance</div>
+      <div class="dock-item" data-soon="Petty cash tracker">
+        <div class="dock-icon">$</div><span class="name">Petty cash tracker</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Monthly tracker">
+        <div class="dock-icon">▦</div><span class="name">Monthly tracker</span><span class="status-dot soon"></span>
+      </div>
+    </div>
+    <div class="dock-group">
+      <div class="dock-group-label">Inventory</div>
+      <div class="dock-item" data-soon="Fabric and trim inventory tracker">
+        <div class="dock-icon">▣</div><span class="name">Fabric &amp; trim inventory</span><span class="status-dot soon"></span>
+      </div>
+      <div class="dock-item" data-soon="Vendor and supplier directory">
+        <div class="dock-icon">☎</div><span class="name">Vendor directory</span><span class="status-dot soon"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <div class="eyebrow">Operations OS</div>
+      <h1>Uniform manufacturing operations</h1>
+      <p class="subtitle">Costing, production, finance, and inventory tools for the factory floor — each module deploys independently from the <span class="mono">operations-os/</span> folder.</p>
+    </div>
+
+    <!-- Costing & Pricing -->
+    <div class="section">
+      <div class="section-title">Costing &amp; pricing <span class="section-count">4 modules</span></div>
+      <div class="card-grid">
+
+        <div class="card" data-soon="Garment cost calculator">
+          <div class="card-top">
+            <div class="card-icon">₹</div>
+            <span class="badge soon">Coming soon</span>
+          </div>
+          <div class="card-name">Garment cost calculator</div>
+          <div class="card-desc">Computes per-piece cost for a uniform style from fabric, trims, labor, and overhead inputs. Built, not yet deployed publicly.</div>
+          <div class="card-meta"><span>Own app</span><span class="mono">Not synced</span></div>
+        </div>
+
+        <div class="card" data-soon="Fabric average calculator">
+          <div class="card-top">
+            <div class="card-icon">⊞</div>
+            <span class="badge soon">Coming soon</span>
+          </div>
+          <div class="card-name">Fabric average calculator</div>
+          <div class="card-desc">Averages fabric consumption per garment across cutting batches, to tighten cost estimates over time.</div>
+          <div class="card-meta"><span>Own app</span><span class="mono">Not synced</span></div>
+        </div>
+
+        <div class="card" data-soon="Fabric kilo-to-width calculator">
+          <div class="card-top">
+            <div class="card-icon">↔</div>
+            <span class="badge soon">Coming soon</span>
+          </div>
+          <div class="card-name">Fabric kilo-to-width calculator</div>
+          <div class="card-desc">Converts fabric weight (kg) to usable running length at a given width — for purchase planning and yield checks.</div>
+          <div class="card-meta"><span>Own app</span><span class="mono">Not synced</span></div>
+        </div>
+
+        <div class="card" data-soon="Wastage and rejection log">
+          <div class="card-top">
+            <div class="card-icon">✂</div>
+            <span class="badge idea">Idea</span>
+          </div>
+          <div class="card-name">Wastage &amp; rejection log</div>
+          <div class="card-desc">Logs fabric wastage % and rejected pieces per batch, feeding more accurate numbers back into the cost calculator.</div>
+          <div class="card-meta"><span>Own app</span><span class="mono">Not planned</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Production & Labor -->
+    <div class="section">
+      <div class="section-title">Production &amp; labor <span class="section-count">4 modules</span></div>
+      <div class="card-grid">
+
+        <div class="card" data-soon="Tailor piece rate tracker">
+          <div class="card-top">
+            <div class="card-icon">🧵</div>
+            <span class="badge soon">Coming soon</span>
+          </div>
+          <div class="card-name">Tailor piece rate tracker</div>
+          <div class="card-desc">Tracks per-tailor output and piece-rate pay by style and operation, for payroll and productivity review.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not synced</span></div>
+        </div>
+
+        <div class="card" data-soon="Daily task monitor">
+          <div class="card-top">
+            <div class="card-icon">☑</div>
+            <span class="badge soon">Coming soon</span>
+          </div>
+          <div class="card-name">Daily task monitor</div>
+          <div class="card-desc">Floor-level daily checklist of cutting, stitching, finishing, and packing tasks against target counts.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not synced</span></div>
+        </div>
+
+        <div class="card" data-soon="Order and production status board">
+          <div class="card-top">
+            <div class="card-icon">▤</div>
+            <span class="badge idea">Idea</span>
+          </div>
+          <div class="card-name">Order status board</div>
+          <div class="card-desc">Tracks each uniform order through cutting → stitching → finishing → dispatch, by client and deadline.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not planned</span></div>
+        </div>
+
+        <div class="card" data-soon="Delivery and dispatch tracker">
+          <div class="card-top">
+            <div class="card-icon">→</div>
+            <span class="badge idea">Idea</span>
+          </div>
+          <div class="card-name">Delivery &amp; dispatch tracker</div>
+          <div class="card-desc">Flags dispatch dates against client deadlines — most useful during bulk seasonal school-uniform orders.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not planned</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Finance -->
+    <div class="section">
+      <div class="section-title">Finance <span class="section-count">2 modules</span></div>
+      <div class="card-grid">
+
+        <div class="card" data-soon="Petty cash tracker">
+          <div class="card-top">
+            <div class="card-icon">$</div>
+            <span class="badge soon">Coming soon</span>
+          </div>
+          <div class="card-name">Petty cash tracker</div>
+          <div class="card-desc">Logs day-to-day cash in/out at the factory — supplies, transport, small repairs — reconciled monthly.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not synced</span></div>
+        </div>
+
+        <div class="card" data-soon="Monthly tracker">
+          <div class="card-top">
+            <div class="card-icon">▦</div>
+            <span class="badge soon">Coming soon</span>
+          </div>
+          <div class="card-name">Monthly tracker</div>
+          <div class="card-desc">Rolls up production, labor, and cost figures into a monthly summary view for review.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not synced</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Inventory -->
+    <div class="section">
+      <div class="section-title">Inventory <span class="section-count">2 modules</span></div>
+      <div class="card-grid">
+
+        <div class="card" data-soon="Fabric and trim inventory tracker">
+          <div class="card-top">
+            <div class="card-icon">▣</div>
+            <span class="badge idea">Idea</span>
+          </div>
+          <div class="card-name">Fabric &amp; trim inventory</div>
+          <div class="card-desc">Tracks stock levels of fabric rolls, buttons, zippers, and labels by uniform style and size, to avoid production stoppages.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not planned</span></div>
+        </div>
+
+        <div class="card" data-soon="Vendor and supplier directory">
+          <div class="card-top">
+            <div class="card-icon">☎</div>
+            <span class="badge idea">Idea</span>
+          </div>
+          <div class="card-name">Vendor directory</div>
+          <div class="card-desc">Fabric mills and trim suppliers, with contacts and rate history, for quick sourcing decisions.</div>
+          <div class="card-meta"><span>Sheet or base template</span><span class="mono">Not planned</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Architecture strip -->
+    <div class="arch-strip">
+      <div class="arch-title">How modules connect</div>
+      <div class="arch-sub">Each module is built and deployed as its own standalone app under <span class="mono">operations-os/</span> in the GitHub repo. This dashboard links out to each app — there's no shared backend yet.</div>
+
+      <div class="arch-row"><div class="arch-mod">Garment cost calculator</div><div class="arch-arrow">→</div><div class="arch-source">Standalone app, own logic, no external data source</div><div class="arch-status badge soon">Built, not deployed</div></div>
+      <div class="arch-row"><div class="arch-mod">Fabric average calculator</div><div class="arch-arrow">→</div><div class="arch-source">Standalone app</div><div class="arch-status badge soon">Not built</div></div>
+      <div class="arch-row"><div class="arch-mod">Fabric kilo-to-width calculator</div><div class="arch-arrow">→</div><div class="arch-source">Standalone app</div><div class="arch-status badge soon">Not built</div></div>
+      <div class="arch-row"><div class="arch-mod">Tailor piece rate tracker</div><div class="arch-arrow">→</div><div class="arch-source">Google Sheets, or in-app base template</div><div class="arch-status badge soon">Not built</div></div>
+      <div class="arch-row"><div class="arch-mod">Daily task monitor</div><div class="arch-arrow">→</div><div class="arch-source">Google Sheets, or in-app base template</div><div class="arch-status badge soon">Not built</div></div>
+      <div class="arch-row"><div class="arch-mod">Petty cash tracker</div><div class="arch-arrow">→</div><div class="arch-source">Google Sheets, or in-app base template</div><div class="arch-status badge soon">Not built</div></div>
+      <div class="arch-row"><div class="arch-mod">Monthly tracker</div><div class="arch-arrow">→</div><div class="arch-source">Google Sheets, or in-app base template</div><div class="arch-status badge soon">Not built</div></div>
+
+      <div class="note-block">
+        <strong>Data convention:</strong> trackers don't impose a fixed sheet structure yet. Each one offers two ways in — generate a blank base template (fixed columns and rows you fill in) directly in the app, or connect an existing Google Sheet. No naming convention is enforced beyond that today.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-icon">◐</div>
+    <h3 id="modalTitle">Module name</h3>
+    <p>This module isn't deployed yet. It'll open here once it's live — no separate announcement needed.</p>
+    <button class="modal-close" id="modalClose">Got it</button>
+  </div>
+</div>
+
+<script>
+  // Date
+  const dateNow = document.getElementById('dateNow');
+  const today = new Date();
+  dateNow.textContent = today.toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+
+  // Theme toggle
+  const themeToggle = document.getElementById('themeToggle');
+  const root = document.documentElement;
+  function applyTheme(t){
+    if(t === 'dark'){ root.classList.add('dark'); themeToggle.textContent='☾'; }
+    else { root.classList.remove('dark'); themeToggle.textContent='☀'; }
+  }
+  applyTheme(localStorage.getItem('ops-os-theme') || 'light');
+  themeToggle.addEventListener('click', () => {
+    const next = root.classList.contains('dark') ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('ops-os-theme', next);
+  });
+
+  // Card / dock click behavior
+  const overlay = document.getElementById('modalOverlay');
+  const modalTitle = document.getElementById('modalTitle');
+  document.querySelectorAll('[data-href], [data-soon]').forEach(el => {
+    el.addEventListener('click', () => {
+      const href = el.getAttribute('data-href');
+      if(href){ window.open(href, '_blank'); return; }
+      const name = el.getAttribute('data-soon');
+      modalTitle.textContent = name;
+      overlay.classList.add('open');
+    });
+  });
+  document.getElementById('modalClose').addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) overlay.classList.remove('open'); });
+</script>
+
 </body>
 </html>
